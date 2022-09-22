@@ -17,7 +17,9 @@ module.exports = merge(common, {
         devMiddleware: {
             publicPath: "/",
         },
-        // https: true // enable when HTTPS is needed (like in WebXR)
-    },
+
+        //enable the use of WebXR
+        https: true
+    }
 });
 

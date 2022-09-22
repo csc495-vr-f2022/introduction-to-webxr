@@ -33,7 +33,83 @@ import "@babylonjs/inspector"
 // await can only run inside async functions. https://javascript.info/async-await
 class Game 
 { 
+    private canvas: HTMLCanvasElement;
+    private engine: Engine;
+    private scene: Scene;
 
+    constructor()
+    {
+        this.canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
+
+        this.engine = new Engine(this.canvas, true);
+
+        this.scene = new Scene(this.engine);
+    }
+
+    start() : void
+    {
+        this.createScene().then( () => {
+            // Register a render loop to repeatedly render the scene
+            this.engine.runRenderLoop(() => { 
+                this.scene.render();
+            });
+
+            // Watch for browser/canvas resize events
+            window.addEventListener("resize", () => { 
+                this.engine.resize();
+            });            
+        })
+    }
+
+    private async createScene(){
+        // This creates and positions a first-person camera (non-mesh)
+        var camera = new UniversalCamera("camera1", new Vector3(0, 1.6, 0), this.scene);
+        camera.fov = 90 * Math.PI / 180;
+
+        // This attaches the camera to the canvas
+        camera.attachControl(this.canvas, true);
+
+        // Some ambient light to illuminate the scene
+        var ambientlight = new HemisphericLight("ambient", Vector3.Up(), this.scene);
+        ambientlight.intensity = 1.0;
+        ambientlight.diffuse = new Color3(.25, .25, .25);
+
+        // Add a directional light to imitate sunlight
+        var directionalLight = new DirectionalLight("sunlight", Vector3.Down(), this.scene);
+        directionalLight.intensity = 1.0;
+
+        const environment = this.scene.createDefaultEnvironment({
+            createGround: false,
+
+            skyboxSize: 750,
+
+            skyboxColor: new Color3(.059, .663, .80)
+
+        })
+
+        const xrHelper = await this.scene.createDefaultXRExperienceAsync({});
+
+        // this.scene.onPointerObservable.add((pointerInfo) => {
+        //     this.processPointer(pointerInfo);
+        // })
+
+        var assetsManager = new AssetsManager(this.scene);
+
+        var worldTask = assetsManager.addMeshTask("world tak", "", "assets/models/", "world.glb");
+
+        worldTask.onSuccess = (task) => {
+            worldTask.loadedMeshes[0].name = "world";
+        }
+
+        // Load all meshes after the tasks are completed
+        assetsManager.load();
+
+        assetsManager.onFinish = (task) => {
+            this.scene.debugLayer.show();
+        }
+    }
 }
 /******* End of the Game class ******/   
 
+var game = new Game();
+game.start();
