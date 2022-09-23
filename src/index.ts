@@ -39,21 +39,16 @@ class Game
 
     constructor()
     {
-        // Get the canvas element 
         this.canvas = document.getElementById("renderCanvas") as HTMLCanvasElement;
 
-        // Generate the BABYLON 3D engine
-        this.engine = new Engine(this.canvas, true); 
+        this.engine = new Engine(this.canvas, true);
 
-        // Creates a basic Babylon Scene object
-        this.scene = new Scene(this.engine);   
+        this.scene = new Scene(this.engine);
     }
 
-    start() : void 
+    start() : void
     {
-        // Create the scene and then execute this function afterwards
-        this.createScene().then(() => {
-
+        this.createScene().then( () => {
             // Register a render loop to repeatedly render the scene
             this.engine.runRenderLoop(() => { 
                 this.scene.render();
@@ -62,12 +57,11 @@ class Game
             // Watch for browser/canvas resize events
             window.addEventListener("resize", () => { 
                 this.engine.resize();
-            });
-        });
+            });            
+        })
     }
 
-    private async createScene() 
-    {
+    private async createScene(){
         // This creates and positions a first-person camera (non-mesh)
         var camera = new UniversalCamera("camera1", new Vector3(0, 1.6, 0), this.scene);
         camera.fov = 90 * Math.PI / 180;
@@ -84,68 +78,38 @@ class Game
         var directionalLight = new DirectionalLight("sunlight", Vector3.Down(), this.scene);
         directionalLight.intensity = 1.0;
 
-        // Creates a default skybox
         const environment = this.scene.createDefaultEnvironment({
             createGround: false,
-            skyboxSize: 750,
-            skyboxColor: new Color3(.059, .663, .80)
-        });
 
-        // Creates the XR experience helper
+            skyboxSize: 750,
+
+            skyboxColor: new Color3(.059, .663, .80)
+
+        })
+
         const xrHelper = await this.scene.createDefaultXRExperienceAsync({});
 
-        // There is a bug in Babylon 4.1 that fails to reenable pointer selection after a teleport
-        // This is a hacky workaround that disables a different unused feature instead
-        xrHelper.teleportation.setSelectionFeature(xrHelper.baseExperience.featuresManager.getEnabledFeature("xr-background-remover"));
+        // this.scene.onPointerObservable.add((pointerInfo) => {
+        //     this.processPointer(pointerInfo);
+        // })
 
-        // Register event handler for selection events (pulling the trigger, clicking the mouse button)
-        this.scene.onPointerObservable.add((pointerInfo) => {
-            this.processPointer(pointerInfo);
-        });
-        
-        // The assets manager can be used to load multiple assets
         var assetsManager = new AssetsManager(this.scene);
 
-        // Create a task for each asset you want to load
-        var worldTask = assetsManager.addMeshTask("world task", "", "assets/models/", "world.glb");
+        var worldTask = assetsManager.addMeshTask("world tak", "", "assets/models/", "world.glb");
+
         worldTask.onSuccess = (task) => {
             worldTask.loadedMeshes[0].name = "world";
-            worldTask.loadedMeshes[0].position = new Vector3(0, 0.5, 0);
         }
-        
-        // This loads all the assets and displays a loading screen
+
+        // Load all meshes after the tasks are completed
         assetsManager.load();
 
-        // This will execute when all assets are loaded
-        assetsManager.onFinish = (tasks) => {
-
-            // Add the floor meshes to the teleporter
-            worldTask.loadedMeshes.forEach((mesh) => {
-                if(mesh.name.startsWith("rpgpp_lt_terrain")) {
-                    xrHelper.teleportation.addFloorMesh(mesh);
-                }
-            });
-            
-            // Show the debug layer
+        assetsManager.onFinish = (task) => {
             this.scene.debugLayer.show();
-        };  
-    
-    }
-
-    // Event handler for processing pointer events
-    private processPointer(pointerInfo: PointerInfo)
-    {
-        switch (pointerInfo.type) {
-            case PointerEventTypes.POINTERDOWN:
-                if (pointerInfo.pickInfo?.hit) {
-                    console.log(pointerInfo.pickInfo.pickedMesh?.name + " " + pointerInfo.pickInfo.pickedPoint);
-                }
-                break;
         }
     }
 }
 /******* End of the Game class ******/   
 
-// start the game
 var game = new Game();
 game.start();
